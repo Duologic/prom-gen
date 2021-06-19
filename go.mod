@@ -1,4 +1,4 @@
-module github.com/Duologic/promparse
+module github.com/Duologic/prom-gen
 
 go 1.16
 

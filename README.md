@@ -1,4 +1,4 @@
-# Promparse
+# Prom-gen
 
 A small and incredibly hackish POC to parse Prometheus and Alertmanager source code to generate Jsonnet libraries from
 the `structs`.
