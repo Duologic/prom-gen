@@ -20,8 +20,12 @@ func main() {
 	files := []*ast.File{
 		mustParse(fset, "https://raw.githubusercontent.com/prometheus/alertmanager/v0.22.2/config/config.go", "config.go"),
 		mustParse(fset, "https://raw.githubusercontent.com/prometheus/alertmanager/v0.22.2/config/notifiers.go", "notifiers.go"),
+		//mustParse(fset, "https://raw.githubusercontent.com/prometheus/prometheus/v2.27.1/config/config.go", "config.go"),
+		//mustParse(fset, "https://raw.githubusercontent.com/prometheus/prometheus/v2.27.1/rules/alerting.go", "alerting.go"),
+		//mustParse(fset, "https://raw.githubusercontent.com/prometheus/prometheus/v2.27.1/rules/recording.go", "recording.go"),
 	}
-	d, err := doc.NewFromFiles(fset, files, "config")
+
+	d, err := doc.NewFromFiles(fset, files, "rules") //, doc.AllDecls) <- I need this for the alerting/recording rules
 	if err != nil {
 		fmt.Println(err)
 		return
@@ -113,6 +117,7 @@ func mustParse(fset *token.FileSet, url, filename string) *ast.File {
 }
 
 func ParseName(name string, tag *ast.BasicLit) (string, string, error) {
+	name = strings.Title(name)
 	if tag == nil {
 		return name, strings.ToLower(name), nil
 	}
@@ -121,11 +126,15 @@ func ParseName(name string, tag *ast.BasicLit) (string, string, error) {
 	if err != nil {
 		return "", "", err
 	}
-	yamlTag, err := tags.Get("yaml")
+	var stag *structtag.Tag
+	stag, err = tags.Get("yaml")
 	if err != nil {
-		return "", "", err
+		stag, err = tags.Get("json")
+		if err != nil {
+			return "", "", err
+		}
 	}
-	tagName := yamlTag.Name
+	tagName := stag.Name
 	if tagName == "-" {
 		return name, "", nil
 	}
