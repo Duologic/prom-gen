@@ -21,11 +21,11 @@ func main() {
 		mustParse(fset, "https://raw.githubusercontent.com/prometheus/alertmanager/v0.22.2/config/config.go", "config.go"),
 		mustParse(fset, "https://raw.githubusercontent.com/prometheus/alertmanager/v0.22.2/config/notifiers.go", "notifiers.go"),
 		//mustParse(fset, "https://raw.githubusercontent.com/prometheus/prometheus/v2.27.1/config/config.go", "config.go"),
-		//mustParse(fset, "https://raw.githubusercontent.com/prometheus/prometheus/v2.27.1/rules/alerting.go", "alerting.go"),
-		//mustParse(fset, "https://raw.githubusercontent.com/prometheus/prometheus/v2.27.1/rules/recording.go", "recording.go"),
+		//mustParse(fset, "https://raw.githubusercontent.com/prometheus/prometheus/v2.27.1/pkg/rulefmt/rulefmt.go", "rulefmt.go"),
 	}
 
-	d, err := doc.NewFromFiles(fset, files, "rules") //, doc.AllDecls) <- I need this for the alerting/recording rules
+	d, err := doc.NewFromFiles(fset, files, "config") //, doc.AllDecls)
+	//d, err := doc.NewFromFiles(fset, files, "rulefmt") <- I need this for the alerting/recording rules
 	if err != nil {
 		fmt.Println(err)
 		return
@@ -117,6 +117,18 @@ func mustParse(fset *token.FileSet, url, filename string) *ast.File {
 }
 
 func ParseName(name string, tag *ast.BasicLit) (string, string, error) {
+	name, tagName, err := parseName(name, tag)
+	switch tagName {
+	case "for":
+		return name, "f", err
+	case "error":
+		return name, "e", err
+	default:
+		return name, tagName, err
+	}
+}
+
+func parseName(name string, tag *ast.BasicLit) (string, string, error) {
 	name = strings.Title(name)
 	if tag == nil {
 		return name, strings.ToLower(name), nil
