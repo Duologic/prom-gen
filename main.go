@@ -18,14 +18,14 @@ func main() {
 	fset := token.NewFileSet()
 
 	files := []*ast.File{
-		mustParse(fset, "https://raw.githubusercontent.com/prometheus/alertmanager/v0.22.2/config/config.go", "config.go"),
-		mustParse(fset, "https://raw.githubusercontent.com/prometheus/alertmanager/v0.22.2/config/notifiers.go", "notifiers.go"),
+		//mustParse(fset, "https://raw.githubusercontent.com/prometheus/alertmanager/v0.22.2/config/config.go", "config.go"),
+		//mustParse(fset, "https://raw.githubusercontent.com/prometheus/alertmanager/v0.22.2/config/notifiers.go", "notifiers.go"),
 		//mustParse(fset, "https://raw.githubusercontent.com/prometheus/prometheus/v2.27.1/config/config.go", "config.go"),
-		//mustParse(fset, "https://raw.githubusercontent.com/prometheus/prometheus/v2.27.1/pkg/rulefmt/rulefmt.go", "rulefmt.go"),
+		mustParse(fset, "https://raw.githubusercontent.com/prometheus/prometheus/v2.27.1/pkg/rulefmt/rulefmt.go", "rulefmt.go"),
 	}
 
-	d, err := doc.NewFromFiles(fset, files, "config") //, doc.AllDecls)
-	//d, err := doc.NewFromFiles(fset, files, "rulefmt") <- I need this for the alerting/recording rules
+	//d, err := doc.NewFromFiles(fset, files, "config") //, doc.AllDecls)
+	d, err := doc.NewFromFiles(fset, files, "rulefmt") //<- I need this for the alerting/recording rules
 	if err != nil {
 		fmt.Println(err)
 		return
@@ -116,19 +116,18 @@ func mustParse(fset *token.FileSet, url, filename string) *ast.File {
 	return f
 }
 
-func ParseName(name string, tag *ast.BasicLit) (string, string, error) {
-	name, tagName, err := parseName(name, tag)
+func SafeVariableName(tagName string) string {
 	switch tagName {
 	case "for":
-		return name, "f", err
+		return "f"
 	case "error":
-		return name, "e", err
+		return "e"
 	default:
-		return name, tagName, err
+		return tagName
 	}
 }
 
-func parseName(name string, tag *ast.BasicLit) (string, string, error) {
+func ParseName(name string, tag *ast.BasicLit) (string, string, error) {
 	name = strings.Title(name)
 	if tag == nil {
 		return name, strings.ToLower(name), nil
@@ -161,23 +160,24 @@ func Render(name string, tag *ast.BasicLit, exp ast.Expr, doc string) (string, e
 	if tagName == "" {
 		return "", nil
 	}
+	variableName := SafeVariableName(tagName)
 	var out string
 	switch exp.(type) {
 	case *ast.Ident:
 		if doc != "" {
 			out = out + fmt.Sprintf("'#with%s': d.fn('%s', []),\n", name, doc)
 		}
-		out = out + fmt.Sprintf("with%s(%s): {\n", name, tagName)
-		out = out + fmt.Sprintf("  %s: %s\n},", tagName, tagName)
-		//out = out + fmt.Sprintf("%#v %s: %s\n", exp.(*ast.Ident).Name, fld.Names[0], fld.Doc.Text())
+		out = out + fmt.Sprintf("with%s(%s): {\n", name, variableName)
+		out = out + fmt.Sprintf("  '%s': %s\n},", tagName, variableName)
+		//out = out + fmt.Sprintf("%#v '%s': %s\n", exp.(*ast.Ident).Name, fld.Names[0], fld.Doc.Text())
 	case *ast.ArrayType:
 		if doc != "" {
 			out = out + fmt.Sprintf("'#with%s': d.fn('%s', []),\n", name, doc)
 		}
-		out = out + fmt.Sprintf("with%s(%s): {\n", name, tagName)
-		out = out + fmt.Sprintf("  %s: (if std.isArray(%s) then %s else [%s])\n},\n", tagName, tagName, tagName, tagName)
-		out = out + fmt.Sprintf("with%sMixin(%s): {\n", name, tagName)
-		out = out + fmt.Sprintf("  %s+: (if std.isArray(%s) then %s else [%s])\n},", tagName, tagName, tagName, tagName)
+		out = out + fmt.Sprintf("with%s(%s): {\n", name, variableName)
+		out = out + fmt.Sprintf("  '%s': (if std.isArray(%s) then %s else [%s])\n},\n", tagName, variableName, variableName, variableName)
+		out = out + fmt.Sprintf("with%sMixin(%s): {\n", name, variableName)
+		out = out + fmt.Sprintf("  '%s'+: (if std.isArray(%s) then %s else [%s])\n},", tagName, variableName, variableName, variableName)
 	case *ast.StarExpr:
 		if name == "" {
 			switch exp.(*ast.StarExpr).X.(type) {
@@ -193,14 +193,14 @@ func Render(name string, tag *ast.BasicLit, exp ast.Expr, doc string) (string, e
 		if doc != "" {
 			out = out + fmt.Sprintf("'#with%s': d.fn('%s', []),\n", name, doc)
 		}
-		out = out + fmt.Sprintf("with%s(%s): {\n", name, tagName)
-		out = out + fmt.Sprintf("  %s: %s\n},", tagName, tagName)
+		out = out + fmt.Sprintf("with%s(%s): {\n", name, variableName)
+		out = out + fmt.Sprintf("  '%s': %s\n},", tagName, variableName)
 	default:
 		if doc != "" {
 			out = out + fmt.Sprintf("'#with%s': d.fn('%s', []),\n", name, doc)
 		}
-		out = out + fmt.Sprintf("with%s(%s): {\n", name, tagName)
-		out = out + fmt.Sprintf("  %s: %s\n},", tagName, tagName)
+		out = out + fmt.Sprintf("with%s(%s): {\n", name, variableName)
+		out = out + fmt.Sprintf("  '%s': %s\n},", tagName, variableName)
 	}
 	return out, nil
 }

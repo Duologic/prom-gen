@@ -26,7 +26,7 @@
       expr: expr,
     },
     withFor(f): {
-      f: f,
+      'for': f,
     },
     withLabels(labels): {
       labels: labels,
@@ -71,7 +71,7 @@
       expr: expr,
     },
     withFor(f): {
-      f: f,
+      'for': f,
     },
     withLabels(labels): {
       labels: labels,
